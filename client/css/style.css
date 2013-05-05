@@ -1,0 +1,106 @@
+@charset "utf-8";
+
+/**
+ * style.css
+ *
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see http://gnu.org/licenses/lgpl.txt.
+ *
+ * @project      A simple chat client based on the WebSocket protocol.
+ * @version      0.1.1-beta
+ * @package      xhtml-css
+ * @author       Florian Wolters <wolters.fl@googlemail.com>
+ * @author       Steffen Schütte <steffen.schuette@web.de>
+ * @copyright    2012 Florian Wolters, Steffen Schütte
+ * @cssdoc       version 1.0-pre
+ * @license      http://gnu.org/licenses/lgpl.txt LGPL-3.0+
+ * @media        all
+ * @valid        true
+ */
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0 auto;
+    width: 800px;
+}
+
+/* Site header */
+
+body > header {
+    font-weight: bold;
+    margin-bottom: 1em;
+}
+
+/* Site footer */
+
+body > footer {
+    overflow: hidden;
+    margin-top: 2em;
+    border-top: 0.2em solid #CCCCCC;
+    font-size: 80%;
+}
+
+legend {
+    font-weight: bold;
+    font-size: 90%;
+}
+
+/* Site main content */
+
+[role="main"] {
+    border: .2em solid black;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+/* Chat log */
+
+#chatlog {
+    list-style-type: none;
+    padding: 0.5em;
+    border: 1px solid black;
+}
+
+#chatlog .uid, #chatlog .ts {
+    background-color: inherit;
+    font-size: 80%;
+}
+
+#chatlog .uid {
+    font-style: italic;
+    color: blue;
+}
+
+#chatlog .ts {
+    color: green;
+}
+
+#chatlog .info, #chatlog .warning, #chatlog .error {
+    background-color: inherit;
+    color: inherit;
+    font-family: "Courier New", monospace;
+}
+
+#chatlog .info {
+    color: gray;
+}
+
+#chatlog .warning {
+    font-weight: bold;
+    color: orange;
+}
+
+#chatlog .error {
+    font-weight: bold;
+    color: red;
+}

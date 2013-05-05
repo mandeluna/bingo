@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Bingo!</title>
+  <meta name="author" content="Steven Wart" />
+  <meta name="description" content="A simple bingo game for fun and profit." />
+  <meta name="keywords" content="Bingo, Fun, Chat, Games, Winning" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="css/lib/normalize.min.css" />
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
+</head>
+
+<body>
+  <div role="main">
+    <div id="chatclient">
+      <fieldset>
+        <label for="uid">Name</label>
+        <input id="uid" type="text" value="Guest" />
+        <button id="nick">Change</button>
+      </fieldset>
+      <fieldset>
+        <ul id="chatlog"></ul>
+          <label for="msg">Message</label>
+          <input id="msg" type="text" />
+          <button id="send">Send</button>
+        </div>
+      </fieldset>
+
+      <div id="match-div">
+        <label for="uid">Upcoming matches</label>
+        <ul id="matches"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="jquery.js"></script>
+  <script src="bingo.js"></script>
+  <script src="WebSocketConnection.js"></script>
+
+</body>
+</html>
