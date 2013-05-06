@@ -15,22 +15,41 @@
 <body>
   <div role="main">
     <div id="chatclient">
-      <fieldset>
-        <label for="uid">Name</label>
-        <input id="uid" type="text" value="Guest" />
-        <button id="nick">Change</button>
-      </fieldset>
-      <fieldset>
-        <ul id="chatlog"></ul>
-          <label for="msg">Message</label>
-          <input id="msg" type="text" />
-          <button id="send">Send</button>
-        </div>
-      </fieldset>
 
-      <div id="match-div">
-        <label for="uid">Upcoming matches</label>
+      <div id="idle_matches">
+        <h2 for="matches">Upcoming matches</h2>
         <ul id="matches"></ul>
+      </div>
+
+      <div id="active_match" class="hidden">
+        <div id="matchinfo">
+          <h2 for="match">Match Info</h2>
+          <button id="matchlist">Back to Match List</button>
+        </div>
+        <p id="players"></p>
+        <p id="match"></p>
+        <table id="mainboard">
+        </table>
+
+        <h2 for="cards">Your cards</h2>
+        <button id="buycard">Buy a card</button>
+        <div id="cards"></div>
+
+        <fieldset id="chat">
+          <h2 for="chatbuttons">News</h2>
+          <label for="uid">Name</label>
+          <input id="uid" type="text" value="Guest" />
+          <button id="nick">Change</button>
+        </fieldset>
+
+        <fieldset>
+          <div id="chatbuttons">
+            <label for="msg">Message</label>
+            <input id="msg" type="text" />
+            <button id="send">Send</button>
+          </div>
+          <div id="chatlog"/>
+        </fieldset>
       </div>
     </div>
   </div>

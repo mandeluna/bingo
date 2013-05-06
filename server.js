@@ -31,6 +31,30 @@ function originIsAllowed(origin) {
 // give each match a unique id number
 var gMatchId = 0;
 
+// matches waiting for players to join
+var idle_matches = {}
+
+// active matches active
+var active_matches = {}
+
+// default match timeout value in ms
+var min_timeout = 60 * 1000;
+
+// all clients not in a match
+var idle_connections = {}
+
+// all clients in a match
+var active_connections = {}
+
+// number of matches to keep opening with 1 minute
+var num_idle_matches = 10;
+
+// unique identifiers for all connected players
+var nicks = {}
+
+// reduce the match timeout by this value in each iteration of the idle loop
+var updateInterval = 1000;
+
 // create a new match starting in timeout milliseconds
 function Match(timeout) {
     this.timeout = timeout;
@@ -41,19 +65,20 @@ function Match(timeout) {
     this.jackpot = 5;
 }
 
-// matches waiting for players to join
-var idle_matches = {}
-
-// active matches active
-var active_matches = {}
-
-// default match timeout value in ms
-var min_timeout = 60 * 1000;
-
 Match.prototype.addPlayer = function(player) {
     this.players.push(player);
     this.jackpot += 5;
     player.match = this;
+}
+
+Match.prototype.removePlayer = function(player) {
+    var index = this.players.indexOf(player);
+    if (index == -1) {
+        return;
+    }
+    this.players.splice(index, 1);
+    this.jackpot -= 5;
+    player.match = null;
 }
 
 // when timeout reaches 0, move match into the active queue
@@ -115,17 +140,9 @@ Match.prototype.updateActive = function(updateInterval) {
     });
 }
 
-// all clients not in a match
-var idle_connections = {}
-
-// all clients in a match
-var active_connections = {}
-
-// number of matches to keep opening with 1 minute
-var num_idle_matches = 10;
-
-// unique identifiers for all connected players
-var nicks = {}
+Match.prototype.isIdle = function() {
+    return idle_matches[this.id] === this;
+}
 
 // create the initial idle matches with 1 minute intervals separating their start times
 function createInitialMatches() {
@@ -135,8 +152,6 @@ function createInitialMatches() {
         idle_matches[match.id] = match;
     }
 }
-
-createInitialMatches();
 
 function idleMatches() {
     return JSON.stringify({idle_matches: Object.keys(idle_matches).map(function(id) {
@@ -149,11 +164,6 @@ function idleMatches() {
     })});
 }
 
-console.log(' Created initial matches: ' + idleMatches());
-
-// reduce the match timeout by this value in each iteration of the idle loop
-var updateInterval = 1000;
-
 // notify idle clients once a second of the status of available games
 function idleClientLoop() {
     var idleMessage = idleMatches();
@@ -163,7 +173,6 @@ function idleClientLoop() {
     }
     setTimeout(idleClientLoop, updateInterval);
 }
-idleClientLoop();
 
 // update matches once a second
 function matchUpdateLoop() {
@@ -180,6 +189,11 @@ function matchUpdateLoop() {
 
     setTimeout(matchUpdateLoop, updateInterval);
 }
+
+createInitialMatches();
+console.log(' Created initial matches: ' + idleMatches());
+
+idleClientLoop();
 matchUpdateLoop();
 
 /* ------------ end match.js ------------ */
@@ -235,6 +249,17 @@ Player.prototype.validate_bingo = function(cardData) {
 
     // then confirm that it is actually a bingo
     return new Card(cardData.cells).hasBingo();
+}
+
+Player.prototype.notifyPeers = function(message) {
+    if (!this.match)
+        return;
+
+    this.match.players.forEach(function(peer) {
+        if ((peer !== this) && (peer.connection)) {
+            peer.connection.sendUTF(message);
+        }
+    });
 }
 
 /* ------------ end player.js ------------ */
@@ -338,13 +363,100 @@ function fd(connection) {
     return connection.socket._handle.fd;
 }
 
-function notify_clients(message, originator, prefix) {
-    prefix = prefix || "";
-    for (var conn in active_connections) {
-        if (active_connections[conn].connection === originator)
-            continue;
+function handleJoinRequest(connection, match) {
 
-        active_connections[conn].connection.sendUTF(JSON.stringify({notify : prefix + message}));
+    console.log('handleJoinRequest(' + fd(connection) + ',', match);
+
+    if (active_connections[fd(connection)]) {
+        var player = active_connections[fd(connection)];
+        var errorText = "You are already connected to match " + player.match.id;
+        connection.sendUTF(JSON.stringify({error: errorText}));
+        return;
+    }
+    // players can only join idle matches
+    else if (match) {
+        // register the new active connection
+        var idle_player = idle_connections[fd(connection)];
+        active_connections[fd(connection)] = idle_player;
+        match.addPlayer(idle_player);
+        delete idle_connections[fd(connection)];
+
+        // give the new player a card and the list of active players
+        var card = new Card();
+        card.setPlayer(idle_player);
+        var welcomeMsg = JSON.stringify({welcome : {
+            card : card,
+            match : match.id,
+            players : match.players.map(function(player) {
+                return {id : player.id, nick : player.nick};
+            })}});
+        connection.sendUTF(welcomeMsg);
+
+        // notify other players of the new player's arrival
+        idle_player.notifyPeers(JSON.stringify({joined : {match : match.id, nick : idle_player.nick}}));
+
+        console.log((new Date()) + ' Current connections: ' + Object.keys(active_connections).length);
+    }
+}
+
+function handleLeaveRequest(player) {
+    if (!player) {
+        return;
+    }
+
+    delete active_connections[player.id];
+    idle_connections[player.id] = player;
+
+    if (!player.match) {
+        return;
+    }
+
+    var match = player.match;
+    console.log('player ' + player.nick + ' is leaving match ' + match.id);
+
+    player.notifyPeers(JSON.stringify({left : {nick : player.nick}}));
+
+    var index = match.players.indexOf(player);
+    console.log("before removal, match player count=" + match.players.length);
+    match.removePlayer(player);
+    console.log("after removal, match player count=" + match.players.length);
+
+    if (match.players.length === 0) {
+        console.log('Removing player from match');
+        if (idle_matches[match.id]) {
+            console.log("match is idle, doing nothing");
+        }
+        else if (active_matches[match.id]) {
+            delete active_matches[match.id];
+        }
+    }
+}
+
+function handleCloseEvent(connection) {
+    var invalidFd = -1;
+
+    // linear search is painful but by the time we receive this notification the 
+    // socket has already been cleaned up
+    for (descriptor in active_connections) {
+        if (connection === active_connections[descriptor].connection) {
+            invalidFd = descriptor;
+            break;
+        }
+    }
+    for (descriptor in idle_connections) {
+        if (connection == idle_connections[descriptor]) {
+            invalidFd = descriptor;
+            break;
+        }
+    }
+
+    if (invalidFd >= 0) {
+        handleLeaveRequest(active_connections[invalidFd]);
+        delete active_connections[invalidFd];
+        delete idle_connections[invalidFd];
+    }
+    else {
+        console.log("unable to remove expired fd");
     }
 }
 
@@ -384,51 +496,26 @@ wsServer.on('request', function(request) {
             }
 
             if (command.join) {
-                var id = command.join;
-                var match = idle_matches[id];
-
-                if (active_connections[fd(connection)]) {
-                    var player = active_connections[fd(connection)];
-                    var errorText = "You are already connected to match " + player.match.id;
-                    connection.sendUTF(JSON.stringify({error: errorText}));
-                    return;
+                var join = command.join;
+                if (join.match >= 0) {
+                    var id = join.match;
+                    handleJoinRequest(connection, idle_matches[id]);
                 }
-                // players can only join idle matches
-                else if (match) {
-                    // register the new active connection
-                    var idle_player = idle_connections[fd(connection)];
-                    active_connections[fd(connection)] = idle_player;
-                    match.addPlayer(idle_player);
-                    delete idle_connections[fd(connection)];
-
-                    // give the new player a card and the list of active players
-                    var card = new Card();
-                    card.setPlayer(idle_player);
-                    var welcomeMsg = JSON.stringify({welcome : {
-                        card : card,
-                        players : match.players.map(function(player) {
-                            return player.id;
-                        })}});
-                    connection.sendUTF(welcomeMsg);
-
-                    // notify other players of the new player's arrival
-                    notify_clients(idle_player.nick + " has entered the room", connection);
-
-                    console.log((new Date()) + message.utf8Data);
-                    console.log((new Date()) + ' Current connections: ' + Object.keys(active_connections).length);
-                }
-                // if match is active, report an error
-                else if (active_matches[id]) {
-                    console.log('match is active ' + id);
-                }
-                // if match is invalid, report an error
-                else if (active_matches[id]) {
-                    console.log('invalid match' + id);
+                else {
+                    console.log("Join request received but no match specified", command);
                 }
                 return;
             }
+
+            var player = active_connections[fd(connection)];
+            if (!player) {
+                console.log("Unable to identify active player for connection", connection);
+                return;
+            }
+
             // leave the match
-            else if (command.leave) {
+            if (command.leave) {
+                handleLeaveRequest(player);
             }
             // change nick
             else if (command.nick) {
@@ -440,22 +527,28 @@ wsServer.on('request', function(request) {
             else if (command.whisper) {
             }
             // buy a card
-            else if (command.card) {
+            else if ('card' in command) {
+                console.log("Processing new card request for ", player.id);
+                if (player.match.isIdle()) {
+                    var card = new Card();
+                    card.setPlayer(player);
+                    player.connection.sendUTF(JSON.stringify({card:card}));
+                }
+                else {
+                    var errorText = 'Match has started';
+                    player.connection.sendUTF(JSON.stringify({error:errorText}));
+                }
+                return;
             }
             // report a win
             else if (command.bingo) {
                 // validate the bingo
-                var player = active_connections[fd(connection)];
-                if (!player) {
-                    console.log("Unable to identify active player for connection", connection);
-                    return;
-                }
                 if (player.validate_bingo(command.bingo)) {
                     player.winnings += player.match.jackpot;
                     player.connection.sendUTF(JSON.stringify({status:{winnings:player.winnings}}));
                     delete active_matches[player.match.id];
                     player.reset();
-                    notify_clients(message, connection, player.nick + " has won the jackpot");
+                    player.notifyPeers(player.nick + " has won the jackpot");
                 }
                 else {
                     var errorText = 'Not a valid bingo';
@@ -469,62 +562,14 @@ wsServer.on('request', function(request) {
         }
 
         if (active_connections[fd(connection)]) {
-            var nick = active_connections[fd(connection)].nick;
+            var nick = player.nick;
             console.log('Received Message from ' + nick + ' connection=' + fd(connection));
-            notify_clients(message, connection, nick + " says: ");
+            player.notifyPeers(JSON.stringify({say : message.utf8Data, nick : nick}));
         }
 
     });
     connection.on('close', function(reasonCode, description) {
-        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
-        var invalidFd;
-
-        // linear search is painful but by the time we receive this notification the 
-        // socket has already been cleaned up
-        for (descriptor in active_connections) {
-            if (connection === active_connections[descriptor].connection) {
-                invalidFd = descriptor;
-                break;
-            }
-        }
-        for (descriptor in idle_connections) {
-            if (connection == idle_connections[descriptor]) {
-                invalidFd = descriptor;
-                break;
-            }
-        }
-        if (invalidFd) {
-            var player = active_connections[invalidFd];
-            var nick = player.nick;
-            var match = player.match;
-
-            console.log("removing invalid fd " + invalidFd + " nick=", nick);
-
-            if (match) {
-                var index = match.players.indexOf(player);
-                console.log("before removal, match player count=" + match.players.length);
-                match.players.splice(index, 1);
-                console.log("after removal, match player count=" + match.players.length);
-            }
-
-            if (!match || match.players.length === 0) {
-                console.log('Removing player from match');
-                if (idle_matches[match.id]) {
-                    console.log("match is idle, doing nothing");
-                }
-                else if (active_matches[match.id]) {
-
-                }
-            }
-            for (var conn in active_connections) {
-                if (conn === invalidFd)
-                    continue;
-                active_connections[conn].connection.sendUTF(JSON.stringify({notify: nick + " has left the room"}));
-            }
-            delete active_connections[invalidFd];
-        }
-        else {
-            console.log("unable to remove expired fd");
-        }
+        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected: ' + reasonCode + ' ' + description);
+        handleCloseEvent(connection);
     });
 });

@@ -75,7 +75,7 @@ client.on('connect', function(connection) {
             // list of matches client can connect to
             if (data.idle_matches) {
                 var next_match = data.idle_matches[0];
-                connection.sendUTF(JSON.stringify({join : next_match.id}));
+                connection.sendUTF(JSON.stringify({join : {match : next_match.id}}));
             }
             else if (data.status) {
                 var status = data.status;

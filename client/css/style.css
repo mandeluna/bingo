@@ -63,7 +63,154 @@ legend {
     padding: 10px;
 }
 
+/* Match list */
+
+li {
+    cursor: hand;
+    cursor: pointer;
+}
+
+ul#matches, ul#matches ul
+{
+    display: block;
+    width: 29em;
+    margin: 0px;
+    padding: 0px;
+    list-style-type: none;
+    color: white;
+    background-color: #22AAAA;
+    border: 1px solid white;
+}
+
+ul#matches li
+{
+    display: block;
+    width: 29em;
+    margin: 0px;
+    padding: 4px;
+    list-style-type: none;
+    color: white;
+    background-color: #22AAAA;
+    border: 1px solid white;
+}
+
+ul#matches li:hover {
+    color: #FFFF00;
+    background-color: #AAAAAA;
+}
+
+/* Match info */
+
+#matchinfo {
+    /* float: left; */
+    margin-bottom: 10px;
+}
+
+/*
+#match {
+    clear: left;
+}
+*/
+
+table#mainboard {
+    border: 4px solid brown;
+}
+
+table#mainboard tr td {
+    width: 2em;
+    margin: 0px;
+    padding: 4px;
+    list-style-type: none;
+    color: white;
+    background-color: #44CCCC;
+    border: 1px solid brown;
+    text-align: center;
+}
+
+table#mainboard tr td.mainboard-label {
+    font-style: bold;
+    color: darkRed;
+    background-color: lightYellow;
+}
+
+table#mainboard tr td.called-square {
+    font-style: bold;
+    color: blue;
+    background-color: #22AAAA;
+}
+
+/* Cards */
+
+div#cards table {
+    margin-top: 6px;
+    margin-right: 6px;
+    border: 2px solid black;
+    float: left;
+}
+
+div#cards table tr td {
+    width: 2em;
+    margin: 0px;
+    padding: 4px;
+    list-style-type: none;
+    color: blue;
+    background-color: white;
+    border: 1px solid black;
+    text-align: center;
+    cursor: hand;
+    cursor: pointer;
+}
+
+div#cards table tr td.card-label {
+    font-style: bold;
+    color: white;
+    background-color: blue;
+}
+
+div#cards table tr td.free-square {
+    font-style: bold;
+    font-size: 50%;
+    color: black;
+    background-color: white;
+    border: 1px solid black;
+}
+
+div#cards table tr td.stamped {
+    background: #f00;
+    border-radius: 50%;
+}
+
+/* Players */
+
+#players
+{
+    color: blue;
+    font-style: oblique;
+    font-weight: 200;
+    cursor: hand;
+    cursor: pointer;
+    margin-left: 20px;
+    margin-top: 40px;
+}
+
+#player-header
+{
+    color: black;
+    font-style: italic;
+    margin-right: 4px;
+}
+
+/* Idle elements */
+
+.hidden {
+    display: none;
+}
+
 /* Chat log */
+
+#chat {
+    clear: left;
+}
 
 #chatlog {
     list-style-type: none;
