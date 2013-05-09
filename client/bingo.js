@@ -207,7 +207,7 @@ Card.prototype.hasBingo = function() {
   }
 
   function returnToMatchList() {
-    ws.send(JSON.stringify({leave : {match : match.id}}));
+    ws.send(JSON.stringify({leave : {match : match}}));
   }
 
   function updatePlayerList() {

@@ -31,7 +31,7 @@
 body {
     font-family: Arial, Helvetica, sans-serif;
     margin: 0 auto;
-    width: 800px;
+    width: 700px;
 }
 
 /* Site header */
@@ -61,6 +61,15 @@ legend {
     border: .2em solid black;
     border-radius: 6px;
     padding: 10px;
+    margin-top: 4px;
+}
+
+/* Login */
+
+button#join-button {
+    color: blue;
+    background-color: lightBlue;
+    border-radius: 10px;
 }
 
 /* Match list */
@@ -102,17 +111,12 @@ ul#matches li:hover {
 /* Match info */
 
 #matchinfo {
-    /* float: left; */
-    margin-bottom: 10px;
+    float: left;
+    margin-top: 10px;
 }
-
-/*
-#match {
-    clear: left;
-}
-*/
 
 table#mainboard {
+    clear: left;
     border: 4px solid brown;
 }
 
@@ -137,6 +141,9 @@ table#mainboard tr td.called-square {
     font-style: bold;
     color: blue;
     background-color: #22AAAA;
+}
+
+#match {
 }
 
 /* Cards */
@@ -208,8 +215,10 @@ div#cards table tr td.stamped {
 
 /* Chat log */
 
-#chat {
+#chatbuttons {
     clear: left;
+    padding: 0.5em;
+    padding-top: 8px;
 }
 
 #chatlog {

@@ -53,7 +53,10 @@ var num_idle_matches = 10;
 var nicks = {}
 
 // reduce the match timeout by this value in each iteration of the idle loop
-var updateInterval = 1000;
+var idleUpdateInterval = 1000;
+
+// reduce the match timeout by this value in each iteration of the idle loop
+var activeUpdateInterval = 10000;
 
 // create a new match starting in timeout milliseconds
 function Match(timeout) {
@@ -84,8 +87,8 @@ Match.prototype.removePlayer = function(player) {
 // when timeout reaches 0, move match into the active queue
 // it will no longer accept new players
 // if there are no players connected to the match, recycle it
-Match.prototype.updateIdle = function(updateInterval) {
-    this.timeout -= updateInterval;
+Match.prototype.updateIdle = function() {
+    this.timeout -= idleUpdateInterval;
     if (this.timeout <= 0) {
         delete idle_matches[this.id];
         if (this.players.length > 0) {
@@ -108,7 +111,7 @@ Match.prototype.updateIdle = function(updateInterval) {
     });
 }
 
-Match.prototype.updateActive = function(updateInterval) {
+Match.prototype.updateActive = function() {
     if (this.players.length === 0) {
         console.log("Match " + this.id + " has no players and will be recycled");
 
@@ -171,30 +174,35 @@ function idleClientLoop() {
     for (var conn in idle_connections) {
         idle_connections[conn].connection.sendUTF(idleMessage);
     }
-    setTimeout(idleClientLoop, updateInterval);
+    setTimeout(idleClientLoop, idleUpdateInterval);
 }
 
-// update matches once a second
-function matchUpdateLoop() {
-
+// update idle matches once a second
+function idleMatchUpdateLoop() {
     console.log(new Date() + ' There are ' + Object.keys(idle_matches).length + ' idle matches');
     for (var match in idle_matches) {
-        idle_matches[match].updateIdle(updateInterval);
+        idle_matches[match].updateIdle();
     }
 
+    setTimeout(idleMatchUpdateLoop, idleUpdateInterval);
+}
+
+// update active matches once per call
+function activeMatchUpdateLoop() {
     console.log(new Date() + ' There are ' + Object.keys(active_matches).length + ' active matches');
     for (var match in active_matches) {
-        active_matches[match].updateActive(updateInterval);
+        active_matches[match].updateActive();
     }
 
-    setTimeout(matchUpdateLoop, updateInterval);
+    setTimeout(activeMatchUpdateLoop, idleUpdateInterval);
 }
 
 createInitialMatches();
 console.log(' Created initial matches: ' + idleMatches());
 
 idleClientLoop();
-matchUpdateLoop();
+idleMatchUpdateLoop();
+activeMatchUpdateLoop();
 
 /* ------------ end match.js ------------ */
 
